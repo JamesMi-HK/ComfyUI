@@ -201,6 +201,7 @@ function addMultilineWidget(node, name, opts, app) {
 			widget.inputEl.blur();
 		}
 	});
+	widget.dynamicPrompts = opts.dynamicPrompts;
 	widget.parent = node;
 	document.body.appendChild(widget.inputEl);
 
