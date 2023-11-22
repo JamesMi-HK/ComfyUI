@@ -14,6 +14,8 @@ from PIL.PngImagePlugin import PngInfo
 import numpy as np
 import safetensors.torch
 
+import comfy.choices
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 
@@ -1638,6 +1640,26 @@ class ImagePadForOutpaint:
 
         return (new_image, mask)
 
+class DynamicPrompt:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True, "placeholder": "A prompt which can contain random text. Eg. A {small|big} {red|yellow|black} {sports car|convertible|van}."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+
+    FUNCTION = "dynamic_prompt"
+    CATEGORY = "conditioning"
+
+    def dynamic_prompt(self, text, seed):
+        text = comfy.choices.translate_choices_with_c_comments(text, seed=seed, strict=False, reescape=r'\()')
+        return (text,)
+
 
 NODE_CLASS_MAPPINGS = {
     "KSampler": KSampler,
@@ -1703,6 +1725,8 @@ NODE_CLASS_MAPPINGS = {
 
     "ConditioningZeroOut": ConditioningZeroOut,
     "ConditioningSetTimestepRange": ConditioningSetTimestepRange,
+
+    "DynamicPrompt": DynamicPrompt,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1759,6 +1783,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageInvert": "Invert Image",
     "ImagePadForOutpaint": "Pad Image for Outpainting",
     "ImageBatch": "Batch Images",
+    # Prompts
+    "DynamicPrompt": "Dynamic Prompt",
     # _for_testing
     "VAEDecodeTiled": "VAE Decode (Tiled)",
     "VAEEncodeTiled": "VAE Encode (Tiled)",
