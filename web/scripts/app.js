@@ -1438,6 +1438,7 @@ export class ComfyApp {
 				}
 			);
 			node.prototype.comfyClass = nodeData.name;
+			node.prototype.ui_output = nodeData.ui_output;
 
 			this.#addNodeContextMenuHandler(node);
 			this.#addDrawBackgroundHandler(node, app);
