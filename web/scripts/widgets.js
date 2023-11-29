@@ -379,7 +379,6 @@ export const ComfyWidgets = {
 
 		// On drop upload files
 		node.onDragDrop = function (e) {
-			console.log("onDragDrop called");
 			let handled = false;
 			for (const file of e.dataTransfer.files) {
 				if (file.type.startsWith("image/")) {
