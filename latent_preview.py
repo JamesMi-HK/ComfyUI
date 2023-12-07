@@ -6,6 +6,7 @@ from comfy.cli_args import args, LatentPreviewMethod
 from comfy.taesd.taesd import TAESD
 import folder_paths
 import comfy.utils
+from comfy import model_management
 
 MAX_PREVIEW_RESOLUTION = 512
 
@@ -18,11 +19,12 @@ class LatentPreviewer:
         return ("JPEG", preview_image, MAX_PREVIEW_RESOLUTION)
 
 class TAESDPreviewerImpl(LatentPreviewer):
-    def __init__(self, taesd):
+    def __init__(self, taesd, device):
         self.taesd = taesd
+        self.device = device
 
     def decode_latent_to_preview(self, x0):
-        x_sample = self.taesd.decode(x0[:1])[0].detach()
+        x_sample = self.taesd.decode(x0[:1].to(self.device))[0].detach()
         x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
         x_sample = 255. * np.moveaxis(x_sample.cpu().numpy(), 0, 2)
         x_sample = x_sample.astype(np.uint8)
@@ -49,6 +51,8 @@ class Latent2RGBPreviewer(LatentPreviewer):
 def get_previewer(device, latent_format):
     previewer = None
     method = args.preview_method
+    if args.preview_cpu:
+        device = torch.device("cpu")
     if method != LatentPreviewMethod.NoPreviews:
         # TODO previewer methods
         taesd_decoder_path = None
@@ -68,7 +72,7 @@ def get_previewer(device, latent_format):
         if method == LatentPreviewMethod.TAESD:
             if taesd_decoder_path:
                 taesd = TAESD(None, taesd_decoder_path).to(device)
-                previewer = TAESDPreviewerImpl(taesd)
+                previewer = TAESDPreviewerImpl(taesd, device)
             else:
                 print("Warning: TAESD previews enabled, but could not find models/vae_approx/{}".format(latent_format.taesd_decoder_name))
 
@@ -91,7 +95,10 @@ def prepare_callback(model, steps, x0_output_dict=None):
 
         preview_bytes = None
         if previewer:
-            preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
+            try:
+                preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
+            except model_management.OOM_EXCEPTION as e:
+                pass
         pbar.update_absolute(step + 1, total_steps, preview_bytes)
     return callback
 
