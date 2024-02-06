@@ -1,7 +1,18 @@
 ComfyUI
 =======
 The most powerful and modular stable diffusion GUI and backend.
+
+In This Branch
 -----------
+- Added the ability to reboot the server with the click of a button
+- Added an option in the settings menu to select the reboot server button location currently 3 locations are available. Menu Bar Top Icon, Small Button, Main Menu
+- Added an option to toggle whether or not you have to confirm that you'd like to reboot the server
+
+![Reboot Button Screenshot](rebootcomfyui.png)
+
+
+Original
+---
 ![ComfyUI Screenshot](comfyui_screenshot.png)
 
 This ui will let you design and execute advanced stable diffusion pipelines using a graph/nodes/flowchart based interface. For some workflow examples and see what ComfyUI can do you can check out:

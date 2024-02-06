@@ -69,6 +69,7 @@ export function $el(tag, propsOrChildren, children) {
 	return element;
 }
 
+
 function dragElement(dragEl, settings) {
 	var posDiffX = 0,
 		posDiffY = 0,
@@ -188,6 +189,7 @@ function dragElement(dragEl, settings) {
 		document.onmouseup = null;
 		document.onmousemove = null;
 	}
+
 }
 
 class ComfyList {
@@ -405,6 +407,11 @@ export class ComfyUI {
 			}, [
 				$el("span.drag-handle"),
 				$el("span", {$: (q) => (this.queueSize = q)}),
+				$el("button.comfy-reboot-server-button-icon", {id: "comfy-reboot-server-icon", textContent: "⚡", onclick: () => {
+					if (!confirmReboot.value || confirm("Are you sure you'd like to reboot the server?")) {
+						api.fetchApi("/reboot")
+					}
+				}}),
 				$el("button.comfy-settings-btn", {textContent: "⚙️", onclick: () => this.settings.show()}),
 			]),
 			$el("button.comfy-queue-btn", {
@@ -494,6 +501,13 @@ export class ComfyUI {
 						this.history.toggle();
 					},
 				}),
+				$el("button", {
+					id: "comfy-reboot-server-button-small", textContent: "Reboot Server", onclick: () => {
+						if (!confirmReboot.value || confirm("Are you sure you'd like to reboot the server?")) {
+							api.fetchApi("/reboot")
+						}
+					}
+				})
 			]),
 			this.queue.element,
 			this.history.element,
@@ -580,7 +594,16 @@ export class ComfyUI {
 					}
 				}
 			}),
+			$el("button", {
+				id: "comfy-reboot-server-button-large", textContent: "Reboot Server", onclick: () => {
+					if (!confirmReboot.value || confirm("Are you sure you'd like to reboot the server?")) {
+						api.fetchApi("/reboot")
+					}
+				}
+			})
+			
 		]);
+
 
 		const devMode = this.settings.addSetting({
 			id: "Comfy.DevMode",
@@ -588,6 +611,38 @@ export class ComfyUI {
 			type: "boolean",
 			defaultValue: false,
 			onChange: function(value) { document.getElementById("comfy-dev-save-api-button").style.display = value ? "block" : "none"},
+		});
+
+		const changeRebootLocation = this.settings.addSetting({
+			id: "Comfy.RebootLocation",
+			name: "Change Reboot Server Button Location",
+			type: "combo",
+			options: ['Menu Bar Top Icon', 'Small Button', 'Main Menu'],
+			defaultValue: 'Menu Bar Top Icon',
+			onChange: (value) => {
+				if( value == 'Menu Bar Top Icon') {
+					document.querySelector('#comfy-reboot-server-icon').style.display = ""
+				} else {
+					document.querySelector('#comfy-reboot-server-icon').style.display = "none"
+				}
+				if(value == 'Small Button') {
+					document.querySelector('#comfy-reboot-server-button-small').style.display = ""
+				} else {
+					document.querySelector('#comfy-reboot-server-button-small').style.display = "none"
+				}
+				if(value == 'Main Menu') {
+					document.querySelector('#comfy-reboot-server-button-large').style.display = ""
+				} else {
+					document.querySelector('#comfy-reboot-server-button-large').style.display = "none"
+				}
+			}
+		});
+
+		const confirmReboot = this.settings.addSetting({
+			id: "Comfy.ConfirmReboot",
+			name: "Require confirmation when rebooting server",
+			type: "boolean",
+			defaultValue: true,
 		});
 
 		dragElement(this.menuContainer, this.settings);
