@@ -1,7 +1,9 @@
+import os.path
+
 import torch
 import math
 import struct
-import comfy.checkpoint_pickle
+from . import checkpoint_pickle
 import safetensors.torch
 import numpy as np
 from PIL import Image
@@ -19,7 +21,7 @@ def load_torch_file(ckpt, safe_load=False, device=None):
         if safe_load:
             pl_sd = torch.load(ckpt, map_location=device, weights_only=True)
         else:
-            pl_sd = torch.load(ckpt, map_location=device, pickle_module=comfy.checkpoint_pickle)
+            pl_sd = torch.load(ckpt, map_location=device, pickle_module=checkpoint_pickle)
         if "global_step" in pl_sd:
             print(f"Global Step: {pl_sd['global_step']}")
         if "state_dict" in pl_sd:
@@ -446,10 +448,10 @@ def set_progress_bar_global_hook(function):
     PROGRESS_BAR_HOOK = function
 
 class ProgressBar:
-    def __init__(self, total):
+    def __init__(self, total: float):
         global PROGRESS_BAR_HOOK
-        self.total = total
-        self.current = 0
+        self.total: float = total
+        self.current: float = 0.0
         self.hook = PROGRESS_BAR_HOOK
 
     def update_absolute(self, value, total=None, preview=None):
@@ -463,3 +465,7 @@ class ProgressBar:
 
     def update(self, value):
         self.update_absolute(self.current + value)
+
+
+def get_project_root() -> str:
+    return os.path.join(os.path.dirname(__file__), "..")

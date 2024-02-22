@@ -7,16 +7,15 @@ from typing import Optional, Any
 
 from .diffusionmodules.util import checkpoint, AlphaBlender, timestep_embedding
 from .sub_quadratic_attention import efficient_dot_product_attention
-
-from comfy import model_management
+from ... import model_management
 
 if model_management.xformers_enabled():
     import xformers
     import xformers.ops
 
-from comfy.cli_args import args
-import comfy.ops
-ops = comfy.ops.disable_weight_init
+from ...cli_args import args
+from ... import ops
+ops = ops.disable_weight_init
 
 # CrossAttn precision handling
 if args.dont_upcast_attention:

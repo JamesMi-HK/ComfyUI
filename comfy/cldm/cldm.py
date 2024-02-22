@@ -13,7 +13,7 @@ from ..ldm.modules.diffusionmodules.util import (
 from ..ldm.modules.attention import SpatialTransformer
 from ..ldm.modules.diffusionmodules.openaimodel import UNetModel, TimestepEmbedSequential, ResBlock, Downsample
 from ..ldm.util import exists
-import comfy.ops
+from .. import ops
 
 class ControlledUnetModel(UNetModel):
     #implemented in the ldm unet
@@ -53,7 +53,7 @@ class ControlNet(nn.Module):
         transformer_depth_middle=None,
         transformer_depth_output=None,
         device=None,
-        operations=comfy.ops.disable_weight_init,
+        operations=ops.disable_weight_init,
         **kwargs,
     ):
         super().__init__()

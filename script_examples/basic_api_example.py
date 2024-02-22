@@ -1,18 +1,14 @@
-import json
-from urllib import request, parse
-import random
-
-#This is the ComfyUI api prompt format.
-
-#If you want it for a specific workflow you can "enable dev mode options"
-#in the settings of the UI (gear beside the "Queue Size: ") this will enable
-#a button on the UI to save workflows in api format.
-
-#keep in mind ComfyUI is pre alpha software so this format will change a bit.
-
-#this is the one for the default workflow
-prompt_text = """
-{
+# This sample shows how to execute a ComfyUI workflow, saving an image file to the location you specify.
+#
+# This script does not need to run within a ComfyUI directory. Instead, this can be used inside your own
+# Python application or located elsewhere. It should **not** be in the Git repository directory.
+#
+# First, you will need to install ComfyUI. Follow the **Manual Install (Windows, Linux, macOS)** instructions in the
+# README.md. If you are an experienced developer, instead run `pip install git+https://github.com/hiddenswitch/ComfyUI.git`
+#
+# Now you should develop your workflow. Start ComfyUI as normal; navigate to "Settings" in the menu, and check "Enable
+# Dev mode Options". Then click "Save (API Format)". Copy and paste the contents of this file here:
+_PROMPT_FROM_WEB_UI = {
     "3": {
         "class_type": "KSampler",
         "inputs": {
@@ -98,23 +94,66 @@ prompt_text = """
         }
     }
 }
-"""
-
-def queue_prompt(prompt):
-    p = {"prompt": prompt}
-    data = json.dumps(p).encode('utf-8')
-    req =  request.Request("http://127.0.0.1:8188/prompt", data=data)
-    request.urlopen(req)
 
 
-prompt = json.loads(prompt_text)
-#set the text prompt for our positive CLIPTextEncode
-prompt["6"]["inputs"]["text"] = "masterpiece best quality man"
+# Observe this is an ordinary dictionary. The JSON that was saved from the workflow is compatible with Python syntax.
+#
+# Now, QUIT AND CLOSE YOUR COMFYUI SERVER. You don't need it anymore. This script will handle starting and stopping
+# the server for you. Actually, it will create an object that does the same thing that pressing Queue Prompt does.
+#
+# We'll now write the entrypoint of our script. This is an `async def main()` because async helps us start and stop the
+# code object that will run your workflow, just like pressing the Queue Prompt button.
+async def main():
+    import copy
 
-#set the seed for our KSampler node
-prompt["3"]["inputs"]["seed"] = 5
+    # Let's make some changes to the prompt. First we'll change the input text:
+    prompt_dict = copy.deepcopy(_PROMPT_FROM_WEB_UI)
+    prompt_dict["6"]["inputs"]["text"] = "masterpiece best quality man"
+
+    # Let's set the seed for our KSampler node:
+    prompt_dict["3"]["inputs"]["seed"] = 5
+
+    # Now we will validate the prompt. This Prompt class contains everything we need to validate the prompt.
+    from comfy.api.components.schema.prompt import Prompt
+    prompt = Prompt.validate(prompt_dict)
+
+    # Your prompt is ready to be processed.
+    # You should **not** be running the ComfyUI application (the thing you start with /main.py). You don't need it. You
+    # are not making any HTTP requests, you are not running a server, you are not connecting to anything, you are not
+    # executing the main.py from the ComfyUI git repository, you don't even need that Git repository located anywhere.
+
+    from comfy.cli_args_types import Configuration
+
+    # Let's specify some settings. Suppose this is the structure of your directories:
+    #   C:/Users/comfyanonymous/Documents/models
+    #   C:/Users/comfyanonymous/Documents/models/checkpoints
+    #   C:/Users/comfyanonymous/Documents/models/loras
+    #   C:/Users/comfyanonymous/Documents/outputs
+    # Then your "current working directory" (`cwd`) should be set to "C:/Users/comfyanonymous/Documents":
+    #   configuration.cwd = "C:/Users/comfyanonymous/Documents/"
+    # Or, if your models directory is located in the same directory as this script:
+    #   configuration.cwd = os.path.dirname(__file__)
+    configuration = Configuration()
+
+    from comfy.client.embedded_comfy_client import EmbeddedComfyClient
+    async with EmbeddedComfyClient(configuration=configuration) as client:
+        # This will run your prompt
+        outputs = await client.queue_prompt(prompt)
+
+        # At this point, your prompt is finished and all the outputs, like saving images, have been completed.
+        # Now the outputs will contain the same thing that the Web UI expresses: a file path for each output.
+        # Let's find the node ID of the first SaveImage node. This will work when you change your workflow JSON from
+        # the example above.
+        save_image_node_id = next(key for key in prompt if prompt[key].class_type == "SaveImage")
+
+        # Now let's print the absolute path to the image.
+        print(outputs[save_image_node_id]["images"][0]["abs_path"])
+    # At this point, all the models have been unloaded from VRAM, and everything has been cleaned up.
 
 
-queue_prompt(prompt)
+# Now let's make this script runnable:
+import asyncio
 
-
+if __name__ == "__main__":
+    # Since our main function is async, it must be run as async too.
+    asyncio.run(main())

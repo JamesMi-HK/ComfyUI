@@ -4,8 +4,8 @@ from typing import Callable, Iterable, Union
 import torch
 from einops import rearrange, repeat
 
-import comfy.ops
-ops = comfy.ops.disable_weight_init
+from ... import ops
+ops = ops.disable_weight_init
 
 from .diffusionmodules.model import (
     AttnBlock,

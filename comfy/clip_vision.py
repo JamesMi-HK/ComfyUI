@@ -3,11 +3,11 @@ import os
 import torch
 import json
 
-import comfy.ops
-import comfy.model_patcher
-import comfy.model_management
-import comfy.utils
-import comfy.clip_model
+from . import ops
+from . import model_patcher
+from . import model_management
+from . import clip_model
+
 
 class Output:
     def __getitem__(self, key):
@@ -33,14 +33,13 @@ class ClipVisionModel():
         with open(json_config) as f:
             config = json.load(f)
 
-        self.load_device = comfy.model_management.text_encoder_device()
-        offload_device = comfy.model_management.text_encoder_offload_device()
-        self.dtype = comfy.model_management.text_encoder_dtype(self.load_device)
-        self.model = comfy.clip_model.CLIPVisionModelProjection(config, self.dtype, offload_device, comfy.ops.manual_cast)
+        self.load_device = model_management.text_encoder_device()
+        offload_device = model_management.text_encoder_offload_device()
+        self.dtype = model_management.text_encoder_dtype(self.load_device)
+        self.model = clip_model.CLIPVisionModelProjection(config, self.dtype, offload_device, ops.manual_cast)
         self.model.eval()
 
-        self.patcher = comfy.model_patcher.ModelPatcher(self.model, load_device=self.load_device, offload_device=offload_device)
-
+        self.patcher = model_patcher.ModelPatcher(self.model, load_device=self.load_device, offload_device=offload_device)
     def load_sd(self, sd):
         return self.model.load_state_dict(sd, strict=False)
 
@@ -48,14 +47,14 @@ class ClipVisionModel():
         return self.model.state_dict()
 
     def encode_image(self, image):
-        comfy.model_management.load_model_gpu(self.patcher)
+        model_management.load_model_gpu(self.patcher)
         pixel_values = clip_preprocess(image.to(self.load_device)).float()
         out = self.model(pixel_values=pixel_values, intermediate_output=-2)
 
         outputs = Output()
-        outputs["last_hidden_state"] = out[0].to(comfy.model_management.intermediate_device())
-        outputs["image_embeds"] = out[2].to(comfy.model_management.intermediate_device())
-        outputs["penultimate_hidden_states"] = out[1].to(comfy.model_management.intermediate_device())
+        outputs["last_hidden_state"] = out[0].to(model_management.intermediate_device())
+        outputs["image_embeds"] = out[2].to(model_management.intermediate_device())
+        outputs["penultimate_hidden_states"] = out[1].to(model_management.intermediate_device())
         return outputs
 
 def convert_to_transformers(sd, prefix):
@@ -88,6 +87,7 @@ def load_clipvision_from_sd(sd, prefix="", convert_keys=False):
     if convert_keys:
         sd = convert_to_transformers(sd, prefix)
     if "vision_model.encoder.layers.47.layer_norm1.weight" in sd:
+        # todo: fix the importlib issue here
         json_config = os.path.join(os.path.dirname(os.path.realpath(__file__)), "clip_vision_config_g.json")
     elif "vision_model.encoder.layers.30.layer_norm1.weight" in sd:
         json_config = os.path.join(os.path.dirname(os.path.realpath(__file__)), "clip_vision_config_h.json")

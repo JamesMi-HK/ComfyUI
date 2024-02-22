@@ -1,12 +1,13 @@
 import os
 
 from transformers import CLIPTokenizer
-import comfy.ops
+from . import ops
 import torch
 import traceback
 import zipfile
 from . import model_management
-import comfy.clip_model
+from pkg_resources import resource_filename
+from . import clip_model
 import json
 
 def gen_empty_tokens(special_tokens, length):
@@ -66,18 +67,20 @@ class SDClipModel(torch.nn.Module, ClipTokenWeightEncoder):
         "hidden"
     ]
     def __init__(self, version="openai/clip-vit-large-patch14", device="cpu", max_length=77,
-                 freeze=True, layer="last", layer_idx=None, textmodel_json_config=None, dtype=None, model_class=comfy.clip_model.CLIPTextModel,
+                 freeze=True, layer="last", layer_idx=None, textmodel_json_config=None, dtype=None, model_class=clip_model.CLIPTextModel,
                  special_tokens={"start": 49406, "end": 49407, "pad": 49407}, layer_norm_hidden_state=True, enable_attention_masks=False):  # clip-vit-base-patch32
         super().__init__()
         assert layer in self.LAYERS
 
         if textmodel_json_config is None:
             textmodel_json_config = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sd1_clip_config.json")
+        if not os.path.exists(textmodel_json_config):
+            textmodel_json_config = resource_filename('comfy', 'sd1_clip_config.json')
 
         with open(textmodel_json_config) as f:
             config = json.load(f)
 
-        self.transformer = model_class(config, dtype, device, comfy.ops.manual_cast)
+        self.transformer = model_class(config, dtype, device, ops.manual_cast)
         self.num_layers = self.transformer.num_layers
 
         self.max_length = max_length
@@ -357,6 +360,9 @@ class SDTokenizer:
     def __init__(self, tokenizer_path=None, max_length=77, pad_with_end=True, embedding_directory=None, embedding_size=768, embedding_key='clip_l', tokenizer_class=CLIPTokenizer, has_start_token=True, pad_to_max_length=True):
         if tokenizer_path is None:
             tokenizer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sd1_tokenizer")
+        if not os.path.exists(os.path.join(tokenizer_path, "tokenizer_config.json")):
+            # package based
+            tokenizer_path = resource_filename('comfy', 'sd1_tokenizer/')
         self.tokenizer = tokenizer_class.from_pretrained(tokenizer_path)
         self.max_length = max_length
 
@@ -408,6 +414,7 @@ class SDTokenizer:
 
         text = escape_important(text)
         parsed_weights = token_weights(text, 1.0)
+        vocab = self.tokenizer.get_vocab()
 
         #tokenize words
         tokens = []
@@ -432,7 +439,12 @@ class SDTokenizer:
                     else:
                         continue
                 #parse word
-                tokens.append([(t, weight) for t in self.tokenizer(word)["input_ids"][self.tokens_start:-1]])
+                exact_word = f"{word}</w>"
+                if exact_word in vocab:
+                    tokenizer_result = [vocab[exact_word]]
+                else:
+                    tokenizer_result = self.tokenizer(word)["input_ids"][self.tokens_start:-1]
+                tokens.append([(t, weight) for t in tokenizer_result])
 
         #reshape token array to CLIP input size
         batched_tokens = []
