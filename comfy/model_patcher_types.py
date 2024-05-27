@@ -1,5 +1,9 @@
+from __future__ import annotations
+
+from typing import Callable, Protocol, TypedDict, List
+from typing_extensions import NotRequired
+
 import torch
-from typing import Callable, Protocol, TypedDict, Optional, List
 
 
 class UnetApplyFunction(Protocol):
@@ -12,10 +16,10 @@ class UnetApplyFunction(Protocol):
 class UnetApplyConds(TypedDict):
     """Optional conditions for unet apply function."""
 
-    c_concat: Optional[torch.Tensor]
-    c_crossattn: Optional[torch.Tensor]
-    control: Optional[torch.Tensor]
-    transformer_options: Optional[dict]
+    c_concat: NotRequired[torch.Tensor]
+    c_crossattn: NotRequired[torch.Tensor]
+    control: NotRequired[torch.Tensor]
+    transformer_options: NotRequired[dict]
 
 
 class UnetParams(TypedDict):
