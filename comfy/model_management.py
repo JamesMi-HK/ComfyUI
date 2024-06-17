@@ -319,8 +319,7 @@ class LoadedModel:
             raise e
 
         if (is_cpu_with_ipex() or is_intel_xpu()) and not args.disable_ipex_optimize:
-            ipex_dtype = torch.bfloat16 if use_cpu_ipex_bf16() else None
-            self.real_model = ipex.optimize(self.real_model.eval(), dtype=ipex_dtype, graph_mode=True, concat_linear=True)
+            self.real_model = ipex.optimize(self.real_model.eval(), graph_mode=True, concat_linear=True)
             self.real_model = torch.compile(self.real_model, backend="ipex")
 
         self.weights_loaded = True
