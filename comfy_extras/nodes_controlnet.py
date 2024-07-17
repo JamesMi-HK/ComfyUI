@@ -6,7 +6,7 @@ UNION_CONTROLNET_TYPES = {"auto": -1,
                           "canny/lineart/anime_lineart/mlsd": 3,
                           "normal": 4,
                           "segment": 5,
-                          "tile": 6,
+                          "tile/deblur": 6,
                           "repaint": 7,
                         }
 
