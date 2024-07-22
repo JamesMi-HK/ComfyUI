@@ -6,8 +6,9 @@ UNION_CONTROLNET_TYPES = {"auto": -1,
                           "canny/lineart/anime_lineart/mlsd": 3,
                           "normal": 4,
                           "segment": 5,
-                          "tile": 6,
-                          "repaint": 7,
+                          "tile/super_res/variation(promax)": 6,
+                          "deblur(promax)": 6,
+                          "in/outpaint(promax)": 7,
                         }
 
 class SetUnionControlNetType:
