@@ -258,7 +258,7 @@ class ResBlock(TimestepBlock):
         else:
             if emb_out is not None:
                 if self.exchange_temb_dims:
-                    emb_out = rearrange(emb_out, "b t c ... -> b c t ...")
+                    emb_out = emb_out.movedim(1, 2)
                 h = h + emb_out
             h = self.out_layers(h)
         return self.skip_connection(x) + h
@@ -809,7 +809,7 @@ class UNetModel(nn.Module):
         self.out = nn.Sequential(
             operations.GroupNorm(32, ch, dtype=self.dtype, device=device),
             nn.SiLU(),
-            zero_module(operations.conv_nd(dims, model_channels, out_channels, 3, padding=1, dtype=self.dtype, device=device)),
+            operations.conv_nd(dims, model_channels, out_channels, 3, padding=1, dtype=self.dtype, device=device),
         )
         if self.predict_codebook_ids:
             self.id_predictor = nn.Sequential(
