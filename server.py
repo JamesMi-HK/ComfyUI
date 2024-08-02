@@ -433,6 +433,9 @@ class PromptServer():
 
             if hasattr(obj_class, 'CATEGORY'):
                 info['category'] = obj_class.CATEGORY
+
+            if hasattr(obj_class, 'TOOLTIPS'):
+                info['tooltips'] = obj_class.TOOLTIPS
             return info
 
         @routes.get("/object_info")

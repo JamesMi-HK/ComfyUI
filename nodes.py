@@ -52,6 +52,13 @@ class CLIPTextEncode:
     FUNCTION = "encode"
 
     CATEGORY = "conditioning"
+    TOOLTIPS = {
+        "input": { 
+            "text": "The text to be encoded.",
+            "clip": "The CLIP model used for encoding the text.",
+        },
+        "output": ("A conditioning containing the embedded text used to guide the diffusion model.",)
+    }
 
     def encode(self, clip, text):
         tokens = clip.tokenize(text)
@@ -265,6 +272,13 @@ class VAEDecode:
     FUNCTION = "decode"
 
     CATEGORY = "latent"
+    TOOLTIPS = {
+        "input": { 
+            "samples": "The latent to be decoded.",
+            "vae": "The VAE model used for decoding the latent.",
+        },
+        "output": ("The decoded image.",)
+    }
 
     def decode(self, vae, samples):
         return (vae.decode(samples["samples"]), )
@@ -512,6 +526,12 @@ class CheckpointLoaderSimple:
     FUNCTION = "load_checkpoint"
 
     CATEGORY = "loaders"
+    TOOLTIPS = {
+        "input": { 
+            "ckpt_name": "The name of the checkpoint (model) to load.",
+        },
+        "output": ("The model used for denoising latents.", "The CLIP model used for encoding text prompts.", "The VAE model used for encoding and decoding images to and from latent space.")
+    }
 
     def load_checkpoint(self, ckpt_name):
         ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
@@ -592,6 +612,16 @@ class LoraLoader:
     FUNCTION = "load_lora"
 
     CATEGORY = "loaders"
+    TOOLTIPS = {
+        "input": { 
+            "model": "The diffusion model the LoRA will be applied to.",
+            "clip": "The CLIP model the LoRA will be applied to.",
+            "lora_name": "The name of the LoRA.",
+            "strength_model": "How strongly to modify the diffusion model. This value can be negative.",
+            "strength_clip": "How strongly to modify the CLIP model. This value can be negative.",
+        },
+        "output": ("The modified diffusion model.", "The modified CLIP model.")
+    }
 
     def load_lora(self, model, clip, lora_name, strength_model, strength_clip):
         if strength_model == 0 and strength_clip == 0:
@@ -1040,6 +1070,14 @@ class EmptyLatentImage:
     FUNCTION = "generate"
 
     CATEGORY = "latent"
+    TOOLTIPS = {
+        "input": { 
+            "width": "The width of the latent images in pixels.",
+            "height": "The height of the latent images in pixels.",
+            "batch_size": "The number of latent images in the batch.",
+        },
+        "output": ("The empty latent image batch.",)
+    }
 
     def generate(self, width, height, batch_size=1):
         latent = torch.zeros([batch_size, 4, height // 8, width // 8], device=self.device)
@@ -1377,6 +1415,21 @@ class KSampler:
     FUNCTION = "sample"
 
     CATEGORY = "sampling"
+    TOOLTIPS = {
+        "input": { 
+            "model": "The model used for denoising the input latent.",
+            "seed": "The random seed used for creating the noise.",
+            "steps": "The number of steps used in the denoising process.",
+            "cfg": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality.",
+            "sampler_name": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output.",
+            "scheduler": "The scheduler controls how noise is gradually removed to form the image.",
+            "positive": "The conditioning describing the attributes you want to include in the image.",
+            "negative": "The conditioning describing the attributes you want to exclude from the image.",
+            "latent_image": "The latent image to denoise.",
+            "denoise": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling.",
+        },
+        "output": ("The denoised latent.",)
+    }
 
     def sample(self, model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=1.0):
         return common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=denoise)
@@ -1436,6 +1489,12 @@ class SaveImage:
     OUTPUT_NODE = True
 
     CATEGORY = "image"
+    TOOLTIPS = {
+        "input": { 
+            "images": "The images to save.",
+            "filename_prefix": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes.",
+        }
+    }
 
     def save_images(self, images, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
         filename_prefix += self.prefix_append
